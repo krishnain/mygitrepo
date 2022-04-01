@@ -1,0 +1,117 @@
+dmath.groovy
+==========================
+def sum(a,b)
+{
+    echo "The sum of ${a} and ${b} is ${a+b}"
+}
+
+def sub(a,b)
+{
+   echo "The subtraction result of  of ${a} and ${b} is ${a-b}"
+}
+
+def mul(a,b)
+{
+   echo "The product of  of ${a} and ${b} is ${a*b}"
+}
+
+def div(a,b)
+{
+   echo "The division of  of ${a} and ${b} is ${a-b}"
+}
+
+
+========================================================
+def newGit(repo)
+{
+  git "${repo}" 
+}
+
+def newMaven()
+{
+    sh 'mvn package' 
+}
+
+def newDeploy(ip,appname)
+{
+ 
+    sh "scp /home/ubuntu/.jenkins/workspace/DeclarativePipeline/webapp/target/webapp.war ubuntu@${ip}:/var/lib/tomcat9/webapps/${appname}.war"
+}
+
+def runSelenium(path)
+{ 
+   sh "java -jar $path/testing.jar"
+
+}
+
+def newApprovals(name)
+{
+  input message: 'Waiting for Approval', submitter: "${name}" 
+}
+
+========================================================
+@Library('libraries')_
+
+pipeline
+{
+    agent any
+    stages
+    {
+        stage('ContinuousDownload')
+        {
+            steps
+            {
+                script
+                {
+                    cicd.newGit("https://github.com/krishnain/maven.git")
+                }
+            }
+        }
+        stage('ContinuousBuild')
+        {
+            steps
+            {
+                script
+                {
+                    cicd.newMaven()
+                }
+            }
+        }
+        stage('ContinuousDeploy')
+        {
+            steps
+            {
+                script
+                {
+                    cicd.newApprovals("hari")
+                    cicd.newDeploy("172.31.81.5","testapp")
+                }
+            }
+        }
+        stage('ContinuousTesting')
+        {
+            steps
+            {
+                script
+                {
+                    cicd.newGit("https://github.com/intelliqittrainings/FunctionalTesting.git")
+                    cicd.runSelenium("/home/ubuntu/.jenkins/workspace/DeclarativePipeline")
+                }
+            }
+        }
+        stage('ContinuousDelivery')
+        {
+            steps
+            {
+                script
+                {
+                    cicd.newApprovals("srinivas")
+                   cicd.newDeploy("172.31.80.42","prodapp")   
+                }
+            }
+        }
+        
+        
+    }
+}
+
